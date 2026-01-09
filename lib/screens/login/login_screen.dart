@@ -4,7 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../widgets/ambient_gradient_background.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../constants/app_colors.dart';
-import '../../providers/auth_provider.dart';
+import '../../features/auth/presentation/auth_controller.dart';
+import '../../core/utils/validators.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -28,22 +29,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final success = await authProvider.login(
+      final authController =
+          Provider.of<AuthController>(context, listen: false);
+      final success = await authController.login(
         _emailController.text.trim(),
         _passwordController.text,
       );
 
       if (success && mounted) {
         // Başarılı login - router will automatically redirect via refreshListenable
-        // The redirect logic in app_router.dart will handle navigation to /home
-        // or to the original protected route if "from" query param exists
-        // We can explicitly navigate, but refreshListenable should handle it automatically
-        context.go('/home');
-      } else if (mounted && authProvider.errorMessage != null) {
+        // State değiştiğinde (notifyListeners) router redirect logic devreye girer
+        // "from" query param'ı varsa orijinal route'a, yoksa /home'a yönlendirir
+        // Explicit navigation yapmıyoruz, router redirect yönetiyor
+      } else if (mounted && authController.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authProvider.errorMessage!),
+            content: Text(authController.errorMessage!),
             backgroundColor: Colors.red,
           ),
         );
@@ -120,19 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           keyboardType: TextInputType.emailAddress,
                           textInputAction: TextInputAction.next,
                           autovalidateMode: AutovalidateMode.onUserInteraction,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Email adresi gereklidir';
-                            }
-                            // Basic email format validation
-                            final emailRegex = RegExp(
-                              r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-                            );
-                            if (!emailRegex.hasMatch(value)) {
-                              return 'Geçerli bir email adresi giriniz';
-                            }
-                            return null;
-                          },
+                          validator: Validators.email,
                         ),
                         const SizedBox(height: 20),
 
@@ -154,15 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           keyboardType: TextInputType.visiblePassword,
                           textInputAction: TextInputAction.done,
                           autovalidateMode: AutovalidateMode.onUserInteraction,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Şifre gereklidir';
-                            }
-                            if (value.length < 6) {
-                              return 'Şifre en az 6 karakter olmalıdır';
-                            }
-                            return null;
-                          },
+                          validator: Validators.password,
                           onFieldSubmitted: (_) => _handleLogin(),
                         ),
                         const SizedBox(height: 12),
@@ -186,12 +167,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 24),
 
                         // Log In Button
-                        Consumer<AuthProvider>(
-                          builder: (context, authProvider, _) {
+                        Consumer<AuthController>(
+                          builder: (context, authController, _) {
                             return SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: authProvider.isLoading
+                                onPressed: authController.isLoading
                                     ? null
                                     : _handleLogin,
                                 style: ElevatedButton.styleFrom(
@@ -205,7 +186,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                 ),
-                                child: authProvider.isLoading
+                                child: authController.isLoading
                                     ? const SizedBox(
                                         height: 20,
                                         width: 20,

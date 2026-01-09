@@ -1,11 +1,18 @@
 import 'package:flutter/foundation.dart';
+import '../../auth/data/auth_repository.dart';
 
-class AuthProvider with ChangeNotifier {
+/// Controller for authentication state management
+/// Uses ChangeNotifier for state updates and delegates business logic to repository
+class AuthController with ChangeNotifier {
+  final AuthRepository _repository;
+
   bool _isLoading = false;
   String? _errorMessage;
   bool _isAuthenticated = false;
   String? _userEmail;
   String? _userName;
+
+  AuthController(this._repository);
 
   // Getters
   bool get isLoading => _isLoading;
@@ -23,31 +30,22 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Simüle edilmiş API çağrısı (gerçek uygulamada API'ye istek atılır)
-      await Future.delayed(const Duration(seconds: 2));
+      final result = await _repository.login(email, password);
 
-      // Business logic validation (e.g., invalid credentials)
-      // Simüle: Eğer email "test@test.com" ve password "123456" ise başarılı
-      // Gerçek uygulamada bu backend'den kontrol edilir
-      if (email == 'test@test.com' && password == '123456') {
-        // Başarılı login
+      if (result.success) {
         _isAuthenticated = true;
-        _userEmail = email;
-        _userName = email.split('@')[0];
-        _isLoading = false;
+        _userEmail = result.userEmail;
+        _userName = result.userName;
         _errorMessage = null;
-        notifyListeners();
-        return true;
       } else {
-        // Geçersiz kullanıcı adı veya şifre (business logic error)
-        _errorMessage = 'Geçersiz email veya şifre';
-        _isLoading = false;
-        notifyListeners();
-        return false;
+        _errorMessage = result.errorMessage;
       }
+
+      _isLoading = false;
+      notifyListeners();
+      return result.success;
     } catch (e) {
-      // Network or server errors
-      _errorMessage = 'Giriş yapılırken bir hata oluştu: ${e.toString()}';
+      _errorMessage = 'Beklenmeyen bir hata oluştu: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -68,30 +66,27 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Simüle edilmiş API çağrısı
-      await Future.delayed(const Duration(seconds: 2));
+      final result = await _repository.signup(
+        fullName,
+        email,
+        password,
+        confirmPassword,
+      );
 
-      // Business logic validation (e.g., email already exists)
-      // Simüle: Eğer email zaten kayıtlıysa hata döndür
-      // Gerçek uygulamada bu backend'den kontrol edilir
-      if (email == 'existing@test.com') {
-        _errorMessage = 'Bu email adresi zaten kayıtlı';
-        _isLoading = false;
-        notifyListeners();
-        return false;
+      if (result.success) {
+        _isAuthenticated = true;
+        _userEmail = result.userEmail;
+        _userName = result.userName;
+        _errorMessage = null;
+      } else {
+        _errorMessage = result.errorMessage;
       }
 
-      // Başarılı signup (simüle)
-      _isAuthenticated = true;
-      _userEmail = email;
-      _userName = fullName;
       _isLoading = false;
-      _errorMessage = null;
       notifyListeners();
-      return true;
+      return result.success;
     } catch (e) {
-      // Network or server errors
-      _errorMessage = 'Kayıt olurken bir hata oluştu: ${e.toString()}';
+      _errorMessage = 'Beklenmeyen bir hata oluştu: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -113,3 +108,4 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 }
+

@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../widgets/ambient_gradient_background.dart';
 import '../../constants/app_colors.dart';
-import '../../providers/auth_provider.dart';
+import '../../features/auth/presentation/auth_controller.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+    final authController = Provider.of<AuthController>(context);
 
     return Scaffold(
       body: AmbientGradientBackground(
@@ -34,7 +34,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Email: ${authProvider.userEmail ?? 'N/A'}',
+                  'Email: ${authController.userEmail ?? 'N/A'}',
                   style: TextStyle(
                     color: AppColors.grey400,
                     fontSize: 16,
@@ -42,7 +42,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Name: ${authProvider.userName ?? 'N/A'}',
+                  'Name: ${authController.userName ?? 'N/A'}',
                   style: TextStyle(
                     color: AppColors.grey400,
                     fontSize: 16,
@@ -51,7 +51,7 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 40),
                 ElevatedButton(
                   onPressed: () {
-                    authProvider.logout();
+                    authController.logout();
                     // Router will automatically redirect to /login via refreshListenable
                   },
                   style: ElevatedButton.styleFrom(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'providers/auth_provider.dart';
+import 'features/auth/data/fake_auth_repository.dart';
+import 'features/auth/presentation/auth_controller.dart';
 import 'routes/app_router.dart';
 
 void main() {
@@ -12,11 +13,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AuthProvider(),
+    // Dependency Injection: Create repository and inject into controller
+    final authRepository = FakeAuthRepository();
+    final authController = AuthController(authRepository);
+
+    return ChangeNotifierProvider.value(
+      value: authController,
       builder: (context, child) {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final router = AppRouter.createRouter(authProvider);
+        final authController = Provider.of<AuthController>(context, listen: false);
+        final router = AppRouter.createRouter(authController);
 
         return MaterialApp.router(
           title: 'Cube Login',

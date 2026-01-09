@@ -4,7 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../widgets/ambient_gradient_background.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../constants/app_colors.dart';
-import '../../providers/auth_provider.dart';
+import '../../features/auth/presentation/auth_controller.dart';
+import '../../core/utils/validators.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -35,8 +36,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Future<void> _handleSignup() async {
     if (_formKey.currentState!.validate() && _agreeToTerms) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final success = await authProvider.signup(
+      final authController = Provider.of<AuthController>(context, listen: false);
+      final success = await authController.signup(
         _fullNameController.text.trim(),
         _emailController.text.trim(),
         _passwordController.text,
@@ -45,11 +46,12 @@ class _SignupScreenState extends State<SignupScreen> {
 
       if (success && mounted) {
         // Başarılı signup - router will automatically redirect via refreshListenable
-        context.go('/home');
-      } else if (mounted && authProvider.errorMessage != null) {
+        // State değiştiğinde (notifyListeners) router redirect logic devreye girer
+        // Explicit navigation yapmıyoruz, router redirect yönetiyor
+      } else if (mounted && authController.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authProvider.errorMessage!),
+            content: Text(authController.errorMessage!),
             backgroundColor: Colors.red,
           ),
         );
@@ -121,12 +123,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         keyboardType: TextInputType.name,
                         textInputAction: TextInputAction.next,
                         autovalidateMode: AutovalidateMode.onUserInteraction,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Ad Soyad gereklidir';
-                          }
-                          return null;
-                        },
+                        validator: Validators.fullName,
                       ),
                       const SizedBox(height: 20),
 
@@ -138,19 +135,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
                         autovalidateMode: AutovalidateMode.onUserInteraction,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Email adresi gereklidir';
-                          }
-                          // Basic email format validation
-                          final emailRegex = RegExp(
-                            r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-                          );
-                          if (!emailRegex.hasMatch(value)) {
-                            return 'Geçerli bir email adresi giriniz';
-                          }
-                          return null;
-                        },
+                        validator: Validators.email,
                       ),
                       const SizedBox(height: 20),
 
@@ -171,15 +156,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         keyboardType: TextInputType.visiblePassword,
                         textInputAction: TextInputAction.next,
                         autovalidateMode: AutovalidateMode.onUserInteraction,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Şifre gereklidir';
-                          }
-                          if (value.length < 6) {
-                            return 'Şifre en az 6 karakter olmalıdır';
-                          }
-                          return null;
-                        },
+                        validator: Validators.password,
                       ),
                       const SizedBox(height: 20),
 
@@ -200,15 +177,10 @@ class _SignupScreenState extends State<SignupScreen> {
                         keyboardType: TextInputType.visiblePassword,
                         textInputAction: TextInputAction.done,
                         autovalidateMode: AutovalidateMode.onUserInteraction,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Şifre onayı gereklidir';
-                          }
-                          if (value != _passwordController.text) {
-                            return 'Şifreler eşleşmiyor';
-                          }
-                          return null;
-                        },
+                        validator: (value) => Validators.confirmPassword(
+                              value,
+                              _passwordController.text,
+                            ),
                         onFieldSubmitted: (_) => _handleSignup(),
                       ),
                       const SizedBox(height: 24),
@@ -267,13 +239,13 @@ class _SignupScreenState extends State<SignupScreen> {
                       const SizedBox(height: 32),
 
                       // Create Account Button
-                      Consumer<AuthProvider>(
-                        builder: (context, authProvider, _) {
+                      Consumer<AuthController>(
+                        builder: (context, authController, _) {
                           return SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
                               onPressed:
-                                  (_agreeToTerms && !authProvider.isLoading)
+                                  (_agreeToTerms && !authController.isLoading)
                                       ? _handleSignup
                                       : null,
                               style: ElevatedButton.styleFrom(
@@ -287,7 +259,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                               ),
-                              child: authProvider.isLoading
+                              child: authController.isLoading
                                   ? const SizedBox(
                                       height: 20,
                                       width: 20,

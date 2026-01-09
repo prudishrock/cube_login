@@ -4,13 +4,13 @@ import '../screens/onboarding/onboarding_screen.dart';
 import '../screens/login/login_screen.dart';
 import '../screens/signup/signup_screen.dart';
 import '../screens/home/home_screen.dart';
-import '../providers/auth_provider.dart';
+import '../features/auth/presentation/auth_controller.dart';
 
 class AppRouter {
-  static GoRouter createRouter(AuthProvider authProvider) {
+  static GoRouter createRouter(AuthController authController) {
     return GoRouter(
       initialLocation: '/onboarding',
-      refreshListenable: authProvider,
+      refreshListenable: authController,
       routes: [
         GoRoute(
           path: '/onboarding',
@@ -39,7 +39,7 @@ class AppRouter {
         ),
       ),
       redirect: (context, state) {
-        final loggedIn = authProvider.isAuthenticated;
+        final loggedIn = authController.isAuthenticated;
         final location = state.uri.path;
         final isLogin = location == '/login';
         final isSignup = location == '/signup';
