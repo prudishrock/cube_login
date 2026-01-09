@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../widgets/ambient_gradient_background.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
-import '../signup/signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -35,14 +35,11 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (success && mounted) {
-        // Başarılı login - ana sayfaya yönlendir (şimdilik sadece mesaj)
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Giriş başarılı!'),
-            backgroundColor: AppColors.primaryCyan,
-          ),
-        );
-        // Navigator.of(context).pushReplacement(...) - Ana sayfaya yönlendirme
+        // Başarılı login - router will automatically redirect via refreshListenable
+        // The redirect logic in app_router.dart will handle navigation to /home
+        // or to the original protected route if "from" query param exists
+        // We can explicitly navigate, but refreshListenable should handle it automatically
+        context.go('/home');
       } else if (mounted && authProvider.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -120,6 +117,22 @@ class _LoginScreenState extends State<LoginScreen> {
                           placeholder: 'name@example.com',
                           prefixIcon: Icons.mail_outline,
                           controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Email adresi gereklidir';
+                            }
+                            // Basic email format validation
+                            final emailRegex = RegExp(
+                              r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+                            );
+                            if (!emailRegex.hasMatch(value)) {
+                              return 'Geçerli bir email adresi giriniz';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 20),
 
@@ -138,6 +151,19 @@ class _LoginScreenState extends State<LoginScreen> {
                             });
                           },
                           controller: _passwordController,
+                          keyboardType: TextInputType.visiblePassword,
+                          textInputAction: TextInputAction.done,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Şifre gereklidir';
+                            }
+                            if (value.length < 6) {
+                              return 'Şifre en az 6 karakter olmalıdır';
+                            }
+                            return null;
+                          },
+                          onFieldSubmitted: (_) => _handleLogin(),
                         ),
                         const SizedBox(height: 12),
 
@@ -343,11 +369,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const SignupScreen(),
-                          ),
-                        );
+                        context.push('/signup');
                       },
                       child: const Text(
                         'Sign up',

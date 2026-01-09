@@ -15,6 +15,8 @@ class AuthProvider with ChangeNotifier {
   String? get userName => _userName;
 
   // Login method
+  // Note: Form validation handles empty fields and format checks
+  // This method only handles business logic (auth errors, network failures, etc.)
   Future<bool> login(String email, String password) async {
     _isLoading = true;
     _errorMessage = null;
@@ -24,37 +26,27 @@ class AuthProvider with ChangeNotifier {
       // Simüle edilmiş API çağrısı (gerçek uygulamada API'ye istek atılır)
       await Future.delayed(const Duration(seconds: 2));
 
-      // Basit validation (gerçek uygulamada backend'den kontrol edilir)
-      if (email.isEmpty || password.isEmpty) {
-        _errorMessage = 'Email ve şifre boş olamaz';
+      // Business logic validation (e.g., invalid credentials)
+      // Simüle: Eğer email "test@test.com" ve password "123456" ise başarılı
+      // Gerçek uygulamada bu backend'den kontrol edilir
+      if (email == 'test@test.com' && password == '123456') {
+        // Başarılı login
+        _isAuthenticated = true;
+        _userEmail = email;
+        _userName = email.split('@')[0];
+        _isLoading = false;
+        _errorMessage = null;
+        notifyListeners();
+        return true;
+      } else {
+        // Geçersiz kullanıcı adı veya şifre (business logic error)
+        _errorMessage = 'Geçersiz email veya şifre';
         _isLoading = false;
         notifyListeners();
         return false;
       }
-
-      if (!email.contains('@')) {
-        _errorMessage = 'Geçerli bir email adresi giriniz';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      if (password.length < 6) {
-        _errorMessage = 'Şifre en az 6 karakter olmalıdır';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      // Başarılı login (simüle)
-      _isAuthenticated = true;
-      _userEmail = email;
-      _userName = email.split('@')[0];
-      _isLoading = false;
-      _errorMessage = null;
-      notifyListeners();
-      return true;
     } catch (e) {
+      // Network or server errors
       _errorMessage = 'Giriş yapılırken bir hata oluştu: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
@@ -63,6 +55,8 @@ class AuthProvider with ChangeNotifier {
   }
 
   // Signup method
+  // Note: Form validation handles empty fields, format checks, and password matching
+  // This method only handles business logic (e.g., email already exists, network failures)
   Future<bool> signup(
     String fullName,
     String email,
@@ -77,37 +71,11 @@ class AuthProvider with ChangeNotifier {
       // Simüle edilmiş API çağrısı
       await Future.delayed(const Duration(seconds: 2));
 
-      // Validation
-      if (fullName.isEmpty) {
-        _errorMessage = 'Ad Soyad boş olamaz';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-        _errorMessage = 'Tüm alanları doldurunuz';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      if (!email.contains('@')) {
-        _errorMessage = 'Geçerli bir email adresi giriniz';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      if (password.length < 6) {
-        _errorMessage = 'Şifre en az 6 karakter olmalıdır';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      if (password != confirmPassword) {
-        _errorMessage = 'Şifreler eşleşmiyor';
+      // Business logic validation (e.g., email already exists)
+      // Simüle: Eğer email zaten kayıtlıysa hata döndür
+      // Gerçek uygulamada bu backend'den kontrol edilir
+      if (email == 'existing@test.com') {
+        _errorMessage = 'Bu email adresi zaten kayıtlı';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -122,6 +90,7 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
+      // Network or server errors
       _errorMessage = 'Kayıt olurken bir hata oluştu: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
